@@ -1,0 +1,922 @@
+---
+title: "Team_project"
+author: 
+- Javier Merino
+- Meyliani Sanjaya 
+- Angeli De los Reyes
+- Nay Zaw Lin
+date: "2025-03-30"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+  html_document:
+    toc: true
+    toc_depth: '3'
+    df_print: paged
+---
+
+# Objective Questions:
+
+- What distinct clusters can be identified based on lifestyle choices, and how do these clusters correlate with Dry Eye Disease outcomes?
+
+- Does BMI and physical health contribute to the development of Dry Eye Disease, and can clustering analysis reveal subgroups at higher risk?
+
+
+# Data Source:
+
+The dataset was sourced from Kaggle (in CSV format) and is intended for predictive modelling and diagnostic analysis of Dry Eye Disease based on key attributes such as sleep quality, sleep duration, eye redness, itchiness, screen time, blue-light filter usage and eye strain.
+
+
+Link: https://www.kaggle.com/datasets/dakshnagra/dry-eye-disease/data
+
+# Initial Transformation:
+
+```{r}
+df = read.csv("../Data/Dry_Eye_Dataset.csv", header = TRUE)
+```
+
+## Missing Values
+
+```{r}
+colSums(is.na(df))
+```
+
+## Data Type
+
+```{r,warning=FALSE}
+library(tidyverse)
+df_factor = df%>%mutate(across(c(Gender,Sleep.disorder,Wake.up.during.night,Feel.sleepy.during.day,Caffeine.consumption,Alcohol.consumption,Smoking,Medical.issue,Ongoing.medication,Smart.device.before.bed,Blue.light.filter,Discomfort.Eye.strain,Redness.in.eye,Itchiness.Irritation.in.eye,Dry.Eye.Disease,Sleep.quality,Stress.level),as.factor))
+```
+
+```{r}
+df_bloodp = df_factor %>%
+  separate(Blood.pressure, into = c("Systolic", "Diastolic"), sep = "/", convert = TRUE)
+```
+
+```{r}
+summary(df_bloodp)
+```
+
+```{r}
+df_bmi = df_bloodp %>%
+  mutate(BMI = (Weight/(Height*Height))*10000)
+```
+
+
+## Data Sample
+
+```{r}
+library(rsample)
+
+set.seed(123)  # Ensure reproducibility
+
+# Perform stratified sampling
+sample = df_bmi %>% 
+  group_by(Dry.Eye.Disease) %>%  # Replace "Gender" with your categorical variable
+  sample_frac(size = 200 / nrow(df_bloodp)) %>% 
+  ungroup()
+```
+
+# Data Exploration
+
+## Numerical Data
+
+```{r}
+sample.numeric = sample %>% select(Age, Sleep.duration, Systolic, Diastolic, Heart.rate, Daily.steps, Physical.activity, BMI, Average.screen.time)
+```
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+library(GGally)
+ggpairs(sample.numeric,
+        title = 'Scatter Plot Matrix Numerical Variables',
+        axisLabels = 'show')
+```
+
+```{r}
+plot_histograms <- function(df) {
+  numeric_cols <- df %>% select(where(is.numeric))
+  
+  for (col in colnames(numeric_cols)) {
+    p = ggplot(df, aes_string(x = col)) +
+      geom_histogram(binwidth = 1, fill = "blue", color = "black", alpha = 0.7) +
+      labs(title = paste("Histogram of", col), x = col, y = "Frequency") +
+      theme_minimal()
+    print(p)
+  }
+}
+
+plot_histograms(sample.numeric)
+```
+
+```{r}
+ggplot(sample.numeric, aes_string(x = sample.numeric$Daily.steps)) +
+      geom_histogram(binwidth = 1000, fill = "blue", color = "black", alpha = 0.7) +
+      labs(title = "Histogram of Daily steps", x = "Steps/day", y = "Frequency") +
+      theme_minimal()
+```
+
+```{r}
+ggplot(sample.numeric, aes_string(x = sample.numeric$Physical.activity)) +
+      geom_histogram(binwidth = 10, fill = "blue", color = "black", alpha = 0.7) +
+      labs(title = "Histogram of Physical Activity", x = "min/day", y = "Frequency") +
+      theme_minimal()
+```
+
+## Categorical Data
+
+```{r}
+sample.categorical = sample %>%select(Gender,Sleep.quality,Stress.level, Sleep.disorder,Wake.up.during.night,Feel.sleepy.during.day,Caffeine.consumption,Alcohol.consumption,Smoking,Medical.issue,Ongoing.medication,Smart.device.before.bed,Blue.light.filter,Discomfort.Eye.strain,Redness.in.eye,Itchiness.Irritation.in.eye,Dry.Eye.Disease)
+```
+
+```{r}
+plot_bar_plots <- function(df) {
+  categorical_cols <- df %>% select(where(is.factor))
+  
+  for (col in colnames(categorical_cols)) {
+    p <- ggplot(df, aes_string(x = col)) +
+      geom_bar(fill = "salmon", color = "black", alpha = 0.7) +
+      labs(title = paste("Bar Plot of", col), x = col, y = "Count") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
+      theme_minimal()
+    
+    print(p)  # Print the plot
+  }
+}
+
+# Call the function on your categorical data frame
+plot_bar_plots(sample.categorical)
+```
+
+# Cluster Tendency
+
+## PCA Plot
+
+```{r}
+sample.scale = scale(sample.numeric)
+```
+
+```{r}
+library(factoextra)
+fviz_pca_ind(prcomp(sample.scale), title = "PCA - Dry Eye",  
+              palette = "jco",
+            geom = "point", ggtheme = theme_classic(),
+           legend = "bottom")
+```
+
+## Hopkins stat
+
+```{r}
+res <- get_clust_tendency(sample.scale, n = nrow(sample.scale)-1, graph = TRUE)
+res$hopkins_stat
+```
+
+```{r,message=TRUE}
+fviz_dist(dist(sample.scale,method = "euclidean"), show_labels = FALSE) + labs(title = "Dry eye data")
+```
+
+# Cluster Exploration
+
+## Kmeans
+
+```{r}
+km2 <- kmeans(sample.scale, 2, nstart = 25) 
+km3 <- kmeans(sample.scale, 3, nstart = 25) 
+km4 <- kmeans(sample.scale, 4, nstart = 25) 
+```
+
+### Plots
+
+```{r}
+fviz_cluster(km2, data = sample.scale, ellipse.type = "euclid", star.plot = TRUE)
+fviz_cluster(km3, data = sample.scale, ellipse.type = "euclid",star.plot = TRUE)
+fviz_cluster(km4, data = sample.scale, ellipse.type = "euclid",star.plot = TRUE)
+```
+
+## Kmedoids
+
+```{r,warning=FALSE}
+library(cluster)
+pam.res2 <- pam(sample.scale, 2)
+pam.res3 <- pam(sample.scale, 3)
+pam.res4 <- pam(sample.scale, 4)
+```
+
+### Plots
+
+```{r}
+fviz_cluster(pam.res2,
+             data = sample.scale,
+             ellipse.type = "t", # Concentration ellipse
+             repel = TRUE, # Avoid label overplotting (slow)
+             ggtheme = theme_classic()
+)
+
+fviz_cluster(pam.res3,
+             ellipse.type = "t", # Concentration ellipse
+             repel = TRUE, # Avoid label overplotting (slow)
+             ggtheme = theme_classic()
+)
+
+fviz_cluster(pam.res4,
+             ellipse.type = "t", # Concentration ellipse
+             repel = TRUE, # Avoid label overplotting (slow)
+             ggtheme = theme_classic()
+)
+```
+
+
+## Hierarchical Clustering
+
+```{r}
+res.dist <- dist(sample.scale, method = "euclidean")
+```
+
+### Ward
+
+```{r}
+res.hc.ward <- hclust(d = res.dist, method = "ward.D2")
+```
+
+#### Plot
+
+```{r}
+fviz_dend(res.hc.ward, cex = 0.5)
+```
+
+
+#### Cut
+
+```{r}
+fviz_dend(res.hc.ward, k = 2, # Cut in four groups
+          cex = 0.5, # label size
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups, "#FC4E07"
+)
+```
+
+```{r}
+grp <- cutree(res.hc.ward, k = 2)
+table(grp)
+```
+
+
+
+```{r}
+fviz_dend(res.hc.ward, k = 3, # Cut in four groups
+          cex = 0.5, # label size
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups, "#FC4E07"
+)
+```
+
+```{r}
+grp <- cutree(res.hc.ward, k = 3)
+table(grp)
+```
+
+
+### Complete
+
+```{r}
+res.hc.com <- hclust(d = res.dist, method = "complete")
+```
+
+#### Plot
+
+```{r}
+fviz_dend(res.hc.com, cex = 0.5)
+```
+
+#### Cut
+
+```{r}
+fviz_dend(res.hc.com, k = 2, # Cut in four groups
+          cex = 0.5, # label size
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups, "#FC4E07"
+)
+```
+
+```{r}
+grp <- cutree(res.hc.com, k = 2)
+table(grp)
+```
+
+```{r}
+fviz_dend(res.hc.com, k = 3, # Cut in four groups
+          cex = 0.5, # label size
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups, "#FC4E07"
+)
+```
+
+```{r}
+grp <- cutree(res.hc.com, k = 3)
+table(grp)
+```
+
+### Comparing
+
+```{r}
+library(dendextend)
+dend1 <- as.dendrogram (res.hc.ward)
+dend2 <- as.dendrogram (res.hc.com)
+dend_list <- dendlist(dend1, dend2)
+```
+
+
+```{r}
+
+tanglegram(dend1, dend2,
+highlight_distinct_edges = FALSE, # Turn-off dashed lines
+common_subtrees_color_lines = FALSE, # Turn-off line colors
+common_subtrees_color_branches = TRUE, # Color common branches
+main = paste("entanglement =", round(entanglement(dend_list), 2))
+)
+```
+
+
+
+# Choosing the Number of Clusters
+
+## Plotting
+
+### Within Sum of Square error
+
+```{r}
+fviz_nbclust(sample.scale, kmeans, method = "wss")
+```
+
+### Silhoutte
+
+```{r,warning=FALSE}
+fviz_nbclust(sample.scale, kmeans, method = "silhouette")+
+  theme_classic()
+```
+
+### Gap Statistic
+
+```{r message=FALSE, warning=FALSE}
+set.seed(123)
+fviz_nbclust(sample.scale, kmeans, nstart = 25, method = "gap_stat", nboot = 50)+
+labs(subtitle = "Gap statistic method")
+```
+
+## Internal Measures
+
+```{r,warning=FALSE,message=FALSE}
+library(clValid)
+clmethods = c("hierarchical","kmeans","pam")
+internal = clValid(sample.scale, 
+                 nClust = 2:4,
+                 clMethods = clmethods,
+                 validation = "internal",
+                 method ="complete")
+summary(internal)
+
+```
+
+## Stability Measures
+
+```{r,warning=FALSE,message=FALSE}
+stability = clValid(sample.scale, 
+                 nClust = 2:4,
+                 clMethods = clmethods,
+                 validation = "stability",
+                 method = "complete")
+summary(stability)
+```
+
+# Cluster Validation
+
+## Silhoutte coefficient
+
+```{r}
+# K-means clustering
+km.res2 <- eclust(sample.scale, "kmeans", k = 2, nstart = 25, graph = FALSE)
+#km.res3 <- eclust(sample.scale, "kmeans", k = 3, nstart = 25, graph = FALSE)
+km.res4 <- eclust(sample.scale, "kmeans", k = 4, nstart = 25, graph = FALSE)
+# Visualize k-means clusters
+#fviz_cluster(km.res, geom = "point", ellipse.type = "euclid", palette = "jco", ggtheme = theme_minimal()) 
+#ellipse.type = "euclid, t"
+#star.plot=TRUE
+
+```
+
+
+```{r}
+hc.res2 <- eclust(sample.scale, "hclust", k = 2, hc_metric = "euclidean", hc_method = "complete", graph = FALSE)
+#hc.res3 <- eclust(sample.scale, "hclust", k = 3, hc_metric = "euclidean", hc_method = "complete", graph = FALSE) 
+hc.res4 <- eclust(sample.scale, "hclust", k = 4, hc_metric = "euclidean", hc_method = "complete", graph = FALSE)
+# Visualize dendrograms
+#fviz_dend(hc.res, show_labels = FALSE, palette = "jco", as.ggplot = TRUE)
+```
+
+```{r}
+pam.res2 <- eclust(sample.scale, "pam", k = 2, nstart = 25, graph = FALSE)
+#pam.res3 <- eclust(sample.scale, "pam", k = 3, nstart = 25, graph = FALSE)
+pam.res4 <- eclust(sample.scale, "pam", k = 4, nstart = 25, graph = FALSE)
+```
+
+
+```{r}
+fviz_silhouette(km.res2, palette = "jco", ggtheme = theme_classic())
+fviz_silhouette(pam.res2, palette = "jco", ggtheme = theme_classic())
+fviz_silhouette(hc.res2, palette = "jco", ggtheme = theme_classic())
+
+#fviz_silhouette(km.res3, palette = "jco", ggtheme = theme_classic())
+#fviz_silhouette(pam.res3, palette = "jco", ggtheme = theme_classic())
+#fviz_silhouette(hc.res3, palette = "jco", ggtheme = theme_classic())
+
+fviz_silhouette(km.res4, palette = "jco", ggtheme = theme_classic())
+fviz_silhouette(pam.res4, palette = "jco", ggtheme = theme_classic())
+fviz_silhouette(hc.res4, palette = "jco", ggtheme = theme_classic())
+
+```
+
+```{r}
+compute_negative_silhouette = function(km_res) {
+  
+  sil = as.data.frame(km_res$silinfo)
+  neg_sil = which(sil[, "widths.sil_width"] < 0)
+  percentage = round(length(neg_sil) / 200 * 100, 2)
+  
+  return(percentage)
+  print(percentage)
+}
+```
+
+```{r}
+compute_negative_silhouette(km.res2)
+compute_negative_silhouette(km.res4)
+compute_negative_silhouette(pam.res2)
+compute_negative_silhouette(pam.res4)
+compute_negative_silhouette(hc.res2)
+compute_negative_silhouette(hc.res4)
+```
+
+
+```{r}
+sil= as.data.frame(km.res2$silinfo)
+neg_sil = which(sil[, 'widths.sil_width'] <0)
+neg_sil
+percentage = round(length(neg_sil)/200*100,2)
+percentage
+```
+
+```{r}
+
+sil2=as.data.frame(km.res4$silinfo)
+neg_sil2 = which(sil2[, 'widths.sil_width'] <0)
+percentage = round(length(neg_sil2)/200*100,2)
+percentage
+```
+
+## Plots
+
+```{r}
+fviz_cluster(km.res2, geom = "point", ellipse.type = "euclid", palette = "jco", ggtheme = theme_minimal()) + ggtitle("Kmeans Euclid Plot") + theme(plot.title = element_text(size = 14, face = "bold")) 
+fviz_cluster(km.res2, geom = "point", ellipse.type = "norm", palette = "jco", ggtheme = theme_minimal()) + ggtitle("Kmeans Norm Plot") + theme(plot.title = element_text(size = 14, face = "bold"))
+fviz_cluster(km.res2, geom = "point", ellipse.type = "convex", palette = "jco", ggtheme = theme_minimal())+ ggtitle("Kmeans Convex Plot") + theme(plot.title = element_text(size = 14, face = "bold"))
+```
+
+## External Cluster Validation
+
+```{r}
+compute_clustering_metrics = function(data, true_labels, cluster_labels) {
+  library(fpc)
+  distance_matrix =  dist(data)
+  true_labels_numeric = as.numeric(true_labels)
+  cluster_labels_cluster = cluster_labels$cluster
+  
+  clust_stats = cluster.stats(distance_matrix, true_labels_numeric, cluster_labels_cluster)
+  
+  table_labels = table(true_labels, cluster_labels_cluster)
+  
+  return(list(table_labels,
+                clust_stats$corrected.rand,
+                clust_stats$vi))
+}
+```
+
+### Rand and VI
+
+```{r}
+compute_clustering_metrics(sample.scale, sample$Dry.Eye.Disease, km.res2)
+```
+
+```{r}
+compute_clustering_metrics(sample.scale, sample$Sleep.quality, km.res2)
+```
+
+```{r}
+compute_clustering_metrics(sample.scale, sample$Caffeine.consumption, km.res2)
+```
+
+```{r}
+compute_clustering_metrics(sample.scale, sample$Alcohol.consumption, km.res2)
+```
+
+```{r}
+compute_clustering_metrics(sample.scale, sample$Smoking, km.res2)
+```
+
+```{r}
+compute_clustering_metrics(sample.scale, sample$Smart.device.before.bed, km.res2)
+```
+```{r}
+compute_clustering_metrics(sample.scale, sample$Blue.light.filter, km.res2)
+```
+
+```{r}
+compute_clustering_metrics(sample.scale, sample$Sleep.quality, km.res2)
+```
+
+
+```{r}
+compute_clustering_metrics(sample.scale, sample$Gender, km.res2)
+```
+
+# Advanced Clustering
+
+## Model Clustering
+
+```{r}
+library(mclust)
+mc = Mclust(sample.scale)            # Model-based-clustering
+summary(mc)    
+```
+
+```{r}
+fviz_mclust(mc, "BIC", palette = "jco")
+```
+
+## Hibrid HKmeans
+
+```{r}
+hk.res = hkmeans(sample.scale,2)
+
+hk.res
+```
+
+```{r}
+fviz_dend(hk.res, cex = 0.6, palette = "jco", 
+          rect = TRUE, rect_border = "jco", rect_fill = TRUE)
+```
+
+```{r}
+library(gridExtra)
+p1=fviz_cluster(hk.res, palette = "jco", repel = TRUE, ggtheme = theme_classic(), geom = 'point', ellipse.type = "convex")+ ggtitle("Hierarchical K-means") + theme(plot.title = element_text(size = 14, face = "bold"))
+
+p2=fviz_cluster(km.res2, palette = "jco", repel = TRUE, ggtheme = theme_classic(), geom = c("point"), ellipse.type = "convex")+ ggtitle("K-means") + theme(plot.title = element_text(size = 14, face = "bold")) 
+
+grid.arrange(p1, p2, ncol = 2, widths = c(2, 2))
+```
+
+
+
+
+Fuzzy Clustering
+
+```{r}
+fanny.res <- fanny(sample.scale, 2)
+
+head(fanny.res$membership, 10)
+```
+
+```{r}
+fanny.res$coeff 
+```
+
+```{r}
+fviz_cluster(fanny.res, ellipse.type = "norm", repel = TRUE,
+             palette = "jco", ggtheme = theme_minimal(), geom = "point",
+             legend = "right")
+```
+
+```{r}
+fviz_silhouette(fanny.res, palette = "jco",
+                ggtheme = theme_minimal())
+
+```
+
+## DBSCAN
+
+```{r}
+set.seed(123)
+db <- fpc::dbscan(sample.scale, eps = 2.5, MinPts = 5)
+fviz_cluster(db, data = sample.scale, stand = FALSE,
+             ellipse = FALSE, show.clust.cent = FALSE,
+             geom = "point",palette = "jco", ggtheme = theme_classic())+
+  ggtitle("DBSCAN Clustering of Scaled Data")
+print(db)
+```
+
+```{r}
+dbscan::kNNdistplot(sample.scale, k =  2)
+abline(h = 2.5, lty = 2)
+```
+
+# Statistical Analysis
+
+For this statistical analysis, ideas from “A Study of Clustered Data and Approaches to Its Analysis” by Sally Galbraith, James A. Daniel, and Bryce Vissel, and “Cluster analysis and its application to healthcare claims data: a study of end-stage renal disease patients who initiated hemodialysis" by  Minlei Liao, Yunfeng Li, Farid Kianifard, Engels Obi and Stephen Arcona. In the first the Wilcoxon rank test was performed to evaluate difference in clusters, and in the second, boxplots are performed to see difference in distributions. 
+
+```{r}
+#Merging
+sample.cluster = cbind(sample, cluster=km.res2$cluster)
+sample.cluster_df = as.data.frame(sample.cluster)
+```
+
+```{r}
+#groups
+group1 = sample.cluster_df %>% filter(cluster==1)
+group2 = sample.cluster_df %>% filter(cluster==2)
+```
+
+## Categorical 
+
+```{r}
+plot_groups <- function(column) {
+  # Convert column to a string if it's passed as a symbol
+  column <- as.character(substitute(column))
+  
+  # Create the first plot
+  plot1 <- ggplot(group1, aes_string(x = column)) +
+    geom_bar(fill = "salmon", color = "black", alpha = 0.7) +
+    geom_text(stat = "count", aes(label = after_stat(count)), vjust = -0.2, size = 4) +
+    labs(title = "Group 1", x = column, y = "Count") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme_minimal()
+  
+  # Create the second plot
+  plot2 <- ggplot(group2, aes_string(x = column)) +
+    geom_bar(fill = "salmon", color = "black", alpha = 0.7) +
+    geom_text(stat = "count", aes(label = after_stat(count)), vjust = -0.2, size = 4) +
+    labs(title = "Group 2", x = column, y = "Count") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme_minimal()
+  
+  # Arrange the plots in a grid
+  grid.arrange(plot1, plot2, ncol = 2, widths = c(1, 1))
+}
+```
+
+```{r}
+plot_groups(Dry.Eye.Disease)
+```
+
+```{r}
+plot_groups(Caffeine.consumption)
+```
+
+```{r}
+plot_groups(Alcohol.consumption)
+```
+
+```{r}
+plot_groups(Smoking)
+```
+
+```{r}
+plot_groups(Smart.device.before.bed)
+```
+
+```{r}
+plot_groups(Blue.light.filter)
+```
+
+```{r}
+plot_groups(Sleep.quality)
+```
+
+```{r}
+plot_groups(Gender)
+```
+
+## Numerical Data
+
+```{r}
+plot_boxplots <- function(column_name) {
+  
+  column_name <- as.character(substitute(column_name))
+  # Create plot for group 1
+  plot1 <- ggplot(group1, aes_string(x = "Dry.Eye.Disease", y = column_name, fill = "Dry.Eye.Disease")) +
+    geom_boxplot(alpha = 0.7) +
+    geom_jitter(height = 0, width = .05) +
+    labs(title = "Group 1", y = column_name) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme_minimal() +
+    theme(legend.position = "none")
+  
+  # Create plot for group 2
+  plot2 <- ggplot(group2, aes_string(x = "Dry.Eye.Disease", y = column_name, fill = "Dry.Eye.Disease")) +
+    geom_boxplot(alpha = 0.7) +
+    geom_jitter(height = 0, width = .05) +
+    labs(title = "Group 2", y = column_name) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme_minimal() +
+    theme(legend.position = "none")
+  
+  # Arrange and display both plots side by side
+  grid.arrange(plot1, plot2, ncol = 2, widths = c(1, 1))
+}
+```
+
+```{r}
+plot_boxplots(Age)
+```
+
+```{r}
+plot_boxplots(BMI)
+```
+
+```{r}
+plot_boxplots(Diastolic)
+```
+
+```{r}
+plot_boxplots(Systolic)
+```
+
+```{r}
+plot_boxplots(Heart.rate)
+```
+
+```{r}
+plot_boxplots(Physical.activity)
+```
+
+```{r}
+plot_boxplots(Daily.steps)
+```
+
+```{r}
+plot_boxplots(Average.screen.time)
+```
+
+```{r}
+plot_boxplots(Sleep.duration)
+```
+
+### Normality Shapiro Test
+
+```{r}
+group1.Yes = group1 %>% filter(Dry.Eye.Disease == "Y")
+group2.Yes = group2 %>% filter(Dry.Eye.Disease == "Y")
+```
+
+```{r}
+variables <- c("Age", "Diastolic", "Systolic", "Heart.rate", "Physical.activity", "Daily.steps", "Average.screen.time", "Sleep.duration","BMI")
+```
+
+
+```{r}
+shapiro_results <- list()
+
+for (var in variables) {
+  test_group1 <- shapiro.test(group1.Yes[[var]])
+  test_group2 <- shapiro.test(group2.Yes[[var]])
+  
+  # Store results in a data frame
+  shapiro_results[[var]] <- data.frame(
+    Variable = var,
+    Group = c("Group 1", "Group 2"),
+    W_statistic = c(test_group1$statistic, test_group2$statistic),
+    P_value = c(test_group1$p.value, test_group2$p.value),
+    Normality = ifelse(c(test_group1$p.value, test_group2$p.value) > 0.05, "Normal", "Not Normal")
+  )
+}
+
+shapiro_table <- do.call(rbind, shapiro_results)
+print(shapiro_table)
+```
+
+
+
+```{r}
+par(mfrow=c(1,2))
+hist(group1.Yes$Age)
+hist(group2.Yes$Age)
+hist(group1.Yes$BMI)
+hist(group2.Yes$BMI)
+hist(group1.Yes$Diastolic)
+hist(group2.Yes$Diastolic)
+hist(group1.Yes$Systolic)
+hist(group2.Yes$Systolic)
+hist(group1.Yes$Heart.rate)
+hist(group2.Yes$Heart.rate)
+hist(group1.Yes$Physical.activity)
+hist(group2.Yes$Physical.activity)
+hist(group1.Yes$Daily.steps)
+hist(group2.Yes$Daily.steps)
+hist(group1.Yes$Average.screen.time)
+hist(group2.Yes$Average.screen.time)
+hist(group1.Yes$Sleep.duration)
+hist(group2.Yes$Sleep.duration)
+```
+
+### Wilcoxon test
+
+```{r}
+# Initialize an empty list to store results
+wilcoxon_results = list()
+
+# Significance level
+alpha = 0.05
+
+# Perform Wilcoxon test for each variable
+for (var in variables) {
+  test = wilcox.test(group1.Yes[[var]], group2.Yes[[var]], exact = FALSE)
+  
+  # Store results in a data frame
+  wilcoxon_results[[var]] <- data.frame(
+    Variable = var,
+    W_statistic = test$statistic,
+    P_value = test$p.value,
+    Decision = ifelse(test$p.value < alpha, "Reject H0", "Do Not Reject H0")
+  )
+}
+
+# Combine results into a single data frame
+wilcoxon_table <- do.call(rbind, wilcoxon_results)
+
+# Print results
+print(wilcoxon_table)
+```
+
+# Objective Question
+
+```{r}
+calculate_mode <- function(x) {
+  uniq_x <- unique(x)
+  uniq_x[which.max(tabulate(match(x, uniq_x)))] # Most frequent value
+}
+```
+
+```{r}
+sample.cluster_df_yes = sample.cluster_df %>% filter(Dry.Eye.Disease=="Y")
+
+# Summarize data
+summary_table_yes <- sample.cluster_df_yes %>%
+  group_by(cluster) %>% # Group by cluster
+  summarise(
+    across(where(is.numeric), mean, na.rm = TRUE),  # Median for numeric
+    across(where(is.character), calculate_mode),      # Mode for categorical
+    across(where(is.factor), calculate_mode)         # Mode for factors
+  )
+
+
+print(summary_table_yes)
+```
+
+```{r}
+sample.cluster_df_no = sample.cluster_df %>% filter(Dry.Eye.Disease=="N")
+
+summary_table_no <- sample.cluster_df_no %>%
+  group_by(cluster) %>% # Group by cluster
+  summarise(
+    across(where(is.numeric), mean, na.rm = TRUE),  
+    across(where(is.character), calculate_mode),    
+    across(where(is.factor), calculate_mode)        
+  )
+
+print(summary_table_no)
+```
+
+```{r}
+library(writexl)
+
+# Save to an Excel file
+write_xlsx(summary_table_no, "summary_table_no.xlsx")
+write_xlsx(summary_table_yes, "summary_table_yes.xlsx")
+```
+
+# Results
+
+For identifying risk groups among the clusters, was considered a comparison of the average (for numerical) and modes (for categorical) grouped by Dry.Eye.Disease and cluster. If there was not difference in the average considering both clusters between each classes of Dry.Eye.Disease, then it was considered that the feature had not influence in the diagnosis. The same with the mode for categorical features. The results were as follow:
+
+- For life choices: people who drink alcohol and use Blue light filter might be at higher risk of suffering a positive diagnostic of Dry Eye Disease. 
+
+- For physical health aspects: Females who have been diagnosed with sleep disorder, eye strain discomfort and eye irritation might be at higher risk of having a positive diagnose of Dry Eye Disease.
+
+# Conclusions
+
+- The Hopkins statistic revealed low clustering tendency, and the Rand and VI indexes also revealed values that suggests a random clustering assignment for this data set.
+
+- Neither of the advanced clustering algorithms learned in class provided a better result than the ones explored in this study: kmeans, pam, and hierarchical clustering.
+
+- The wilcoxon test revealed that there was a statistical difference between the clusters numerical features, nevertheless the classes for the categorical features appeared to have similar distributions for both clusters.
+
+# Next Steps
+
+- Run supervised ML algorithms in the data grouped in each cluster and compare the results obtained.
+
+- Run the analysis used in this report in a bigger sample of the data set. 
+
+- Find new sources of data related to dry eye disease and compare results.
+
+
+
+
