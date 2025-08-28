@@ -50,3 +50,10 @@ This project explores clustering methods to identify potential subgroups within 
 ├── Src/           # rmd file for analysis and modelling
 ├── Documentation/   # Project Proposal, Final project report and presentation
 └── README.md          # Project description
+
+## 🙌 Acknowledgments  
+Developed by:  
+- Javier Merino  
+- Meyliani Sanjaya  
+- Angeli De los Reyes  
+- Nay Zaw Lin  
